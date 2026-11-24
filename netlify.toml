@@ -1,0 +1,8 @@
+# The Next.js site lives in /web. Netlify auto-detects Next.js and installs its runtime.
+[build]
+  base = "web"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
