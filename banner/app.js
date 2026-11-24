@@ -103,7 +103,8 @@
       nm.oninput = () => { p.name = nm.value; draw(); };
       ag.oninput = () => { p.age = ag.value; draw(); };
       row.querySelector('.x').onclick = () => { state.people = state.people.filter((q) => q !== p); refresh(); };
-      row.firstElementChild.onclick = () => select(p.id);
+      // No photo yet → open the file picker for this row; otherwise select it for cropping
+      row.firstElementChild.onclick = () => (p.src ? select(p.id) : pickPhotoFor(p));
       box.appendChild(row);
     });
     $('count').textContent = `${state.people.length} ${state.people.length === 1 ? 'person' : 'people'}`;
@@ -176,6 +177,8 @@
   }
 
   function label(tpl, p) {
+    // Skip the label when a field it uses is blank (avoids a lone "Forever")
+    if ((/\{age\}/.test(tpl) && !p.age) || (/\{years\}/.test(tpl) && !p.years)) return '';
     return tpl.replace(/\{age\}/g, p.age || '').replace(/\{name\}/g, p.name || '').replace(/\{years\}/g, p.years || '');
   }
 
@@ -354,12 +357,6 @@
     inp.onchange = () => inp.files[0] && setPhoto(p, inp.files[0]);
     inp.click();
   }
-  $('people').addEventListener('click', (e) => {
-    if (e.target.classList.contains('noimg')) {
-      const idx = [...$('people').children].indexOf(e.target.parentElement);
-      pickPhotoFor(state.people[idx]);
-    }
-  });
 
   // ---------- inputs ----------
   const drop = $('drop');
@@ -401,6 +398,7 @@
     if (!state.people.length) { setStatus('Add some photos first.', true); return; }
     const [W, H] = sizePx();
     setStatus(`Rendering ${W} × ${H} px…`);
+    await document.fonts.load(`500 40px "${$('font').value}"`).catch(() => {});
     await document.fonts.ready;
     await new Promise((r) => setTimeout(r, 30));
     try {
@@ -451,6 +449,8 @@
   // test/automation hook
   window.lvofBanner = { state, addFiles, refresh, render };
 
-  document.fonts.ready.then(refresh);
+  // Canvas text only uses web fonts once they are loaded, so load all the name fonts up front
+  Promise.all([...$('font').options].map((o) => document.fonts.load(`500 40px "${o.value}"`).catch(() => {})))
+    .then(() => document.fonts.load('400 40px Montserrat')).then(refresh);
   refresh();
 })();
