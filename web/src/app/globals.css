@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0910;
+  --color-surface: #14111c;
+  --color-surface-2: #1c1827;
+  --color-line: #2d2740;
+  --color-fg: #f5f2fb;
+  --color-muted: #aaa3bd;
+  --color-brand: #8f6cff;
+  --color-brand-deep: #5f3fd9;
+  --color-lilac: #cbbcff;
+  --color-candle: #f1c46e;
+
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-sans: "Montserrat Variable", system-ui, sans-serif;
+  --font-script: "Caveat", cursive;
+
+  --animate-marquee: marquee 120s linear infinite;
+  --animate-marquee-rev: marquee 140s linear infinite reverse;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+}
+
+html { background: var(--color-bg); color-scheme: dark; scroll-behavior: smooth; overflow-x: clip; }
+body { overflow-x: clip; }
+body { background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+::selection { background: var(--color-brand); color: white; }
+
+@layer components {
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-lilac);
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border-radius: 999px; padding: 0.85rem 1.6rem; font-weight: 600; font-size: 0.95rem;
+  transition: background-color .2s, color .2s, border-color .2s, transform .2s, box-shadow .2s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--color-brand); color: #fff; box-shadow: 0 8px 30px -8px rgb(143 108 255 / .6); }
+.btn-primary:hover { background: #a185ff; }
+.btn-candle { background: var(--color-candle); color: #1b1408; }
+.btn-candle:hover { background: #f6d48f; }
+.btn-ghost { border: 1px solid rgb(255 255 255 / .22); color: var(--color-fg); }
+.btn-ghost:hover { border-color: var(--color-lilac); background: rgb(255 255 255 / .04); }
+
+.field {
+  width: 100%; background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem; color: var(--color-fg); font-size: 0.95rem; transition: border-color .2s, box-shadow .2s;
+}
+.field:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px rgb(143 108 255 / .25); }
+
+.glow-ring { box-shadow: 0 0 0 1px rgb(143 108 255 / .35), 0 20px 60px -20px rgb(143 108 255 / .45); }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; scroll-behavior: auto !important; }
+}
