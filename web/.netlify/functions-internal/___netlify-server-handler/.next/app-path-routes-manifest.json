@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/cart/page": "/cart",
+  "/shop/page": "/shop",
+  "/shop/[slug]/page": "/shop/[slug]",
+  "/[...slug]/page": "/[...slug]"
+}
