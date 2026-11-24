@@ -11,10 +11,11 @@
   :root {
     --bg: #111016; --panel: #1b1922; --panel2: #24212e; --line: #34303f;
     --text: #ecebf2; --muted: #9b97a8; --accent: #8b4fd8; --accent2: #a974f0;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 Montserrat, system-ui, sans-serif; }
-  header.app { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+  header.app { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
   header.app h1 { font-size: 16px; font-weight: 500; margin: 0; letter-spacing: .04em; }
   header.app .spacer { flex: 1; }
   .layout { display: grid; grid-template-columns: 380px 1fr; height: calc(100vh - 57px); }
@@ -59,6 +60,7 @@
   .tilectl.show { display: flex; }
   .tilectl input[type=range] { width: 180px; }
   .warn { color: #ffcc66; }
+  button.danger { border-color: #ff7b7b; color: #ff9b9b; }
   .status { font-size: 12px; color: var(--muted); }
   details summary { cursor: pointer; color: var(--muted); font-size: 12px; margin: 8px 0; }
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; height: auto; } aside { border-right: 0; } }
@@ -70,7 +72,7 @@
   <span class="status" id="count">0 people</span>
   <span class="spacer"></span>
   <button id="saveProject" title="Save everything (photos included) to a file you can reopen later">Save project</button>
-  <label class="btn" title="Reopen a saved project">Open project<input type="file" id="loadProject" accept=".json,.lvof" hidden></label>
+  <label class="btn" title="Reopen a saved project">Open project<input type="file" id="loadProject" accept=".json" hidden></label>
   <button class="primary" id="exportBtn">Export banner</button>
 </header>
 

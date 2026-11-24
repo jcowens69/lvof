@@ -64,6 +64,23 @@
     } finally { URL.revokeObjectURL(url); }
   }
 
+  // Save a file: inside a claude.ai artifact use the viewer's save prompt; otherwise a normal browser download.
+  const downloadsCap = window.claude && window.claude.use ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+  async function saveFile(filename, blob) {
+    const dl = await downloadsCap;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); return true; }
+      catch (e) {
+        if (e && e.code === 'declined') return false;
+        throw new Error(e && e.message ? e.message : 'save failed');
+      }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    return true;
+  }
+
   function setStatus(t, warn) { const s = $('status'); s.textContent = t; s.className = 'status' + (warn ? ' warn' : ''); }
 
   // ---------- people list ----------
@@ -382,7 +399,18 @@
 
   $('sortAlpha').onclick = () => { state.people.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })); refresh(); };
   $('addBlank').onclick = () => { state.people.push({ id: uid++, name: '', age: '', file: null, src: null, img: null, zoom: 1, ox: 0, oy: -0.25 }); refresh(); };
-  $('clearAll').onclick = () => { if (confirm('Remove everyone from this banner?')) { state.people = []; state.selected = null; refresh(); } };
+  // Two-click confirm (pop-up confirm dialogs are blocked inside claude.ai artifacts)
+  let clearTimer = null;
+  $('clearAll').onclick = () => {
+    const b = $('clearAll');
+    if (!clearTimer) {
+      b.textContent = 'Click again to remove everyone'; b.classList.add('danger');
+      clearTimer = setTimeout(() => { clearTimer = null; b.textContent = 'Clear all'; b.classList.remove('danger'); }, 4000);
+      return;
+    }
+    clearTimeout(clearTimer); clearTimer = null; b.textContent = 'Clear all'; b.classList.remove('danger');
+    state.people = []; state.selected = null; refresh();
+  };
   $('size').onchange = () => { $('customSize').style.display = $('size').value === 'custom' ? 'grid' : 'none'; draw(); };
   ['title', 'labelTpl', 'font', 'accent', 'footLeft', 'footRight', 'showCount', 'cols', 'shape', 'cw', 'ch']
     .forEach((id) => $(id).addEventListener('input', draw));
@@ -406,28 +434,26 @@
       render(c.getContext('2d'), W, H, opts(), state.people, false);
       const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
       if (!blob) throw new Error('Browser could not create an image this large');
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `LVOF-banner-${state.people.length}-${W}x${H}.png`;
-      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      setStatus(`Exported ${a.download} (${(blob.size / 1e6).toFixed(1)} MB). Send this file to the printer.`);
+      const name = `LVOF-banner-${state.people.length}-${W}x${H}.png`;
+      if (await saveFile(name, blob)) setStatus(`Exported ${name} (${(blob.size / 1e6).toFixed(1)} MB). Send this file to the printer.`);
+      else setStatus('Export cancelled.');
     } catch (err) {
       setStatus(`Export failed: ${err.message}. Try a smaller size or use Chrome/Edge.`, true);
     }
   };
 
   // ---------- save / open project ----------
-  $('saveProject').onclick = () => {
+  $('saveProject').onclick = async () => {
     const data = {
       v: 1, settings: Object.fromEntries(['title', 'labelTpl', 'font', 'accent', 'footLeft', 'footRight', 'cols', 'shape', 'size', 'cw', 'ch']
         .map((k) => [k, $(k).value]).concat([['showCount', $('showCount').checked]])),
       logo: state.logo && state.logo.src,
       people: state.people.map(({ name, age, file, src, zoom, ox, oy }) => ({ name, age, file, src, zoom, ox, oy })),
     };
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
-    a.download = `LVOF-banner-project-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    const name = `LVOF-banner-project-${new Date().toISOString().slice(0, 10)}.json`;
+    try {
+      if (await saveFile(name, new Blob([JSON.stringify(data)], { type: 'application/json' }))) setStatus(`Saved ${name}. Use "Open project" to continue later.`);
+    } catch (err) { setStatus(`Could not save the project: ${err.message}`, true); }
   };
   $('loadProject').onchange = async (e) => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
