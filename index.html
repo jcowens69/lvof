@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shirt Art Prep</title>
+<style>
+  :root {
+    --bg: #f5f5f4; --panel: #ffffff; --text: #1c1917; --muted: #78716c;
+    --line: #e7e5e4; --accent: #2563eb; --accent-text: #ffffff; --danger: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0a09; --panel: #1c1917; --text: #f5f5f4; --muted: #a8a29e;
+      --line: #292524; --accent: #3b82f6; --accent-text: #ffffff; --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .panel + .panel { margin-top: 12px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    border-radius: 8px; padding: 7px 11px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); width: 100%; padding: 10px; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  label { font-size: 13px; color: var(--muted); }
+  input[type=range] { width: 100%; }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; color: var(--muted); }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  .chips { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .chip { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .chip .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid var(--muted); flex: none; }
+  .chip code { flex: 1; font-size: 13px; }
+  .chip button { padding: 2px 8px; color: var(--danger); }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .swatches button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid var(--line); }
+  .swatches button.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .stage { min-height: 420px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    padding: 20px; position: relative; overflow: hidden; border: 1px solid var(--line); }
+  .stage.checker { background-color: #fff;
+    background-image: linear-gradient(45deg,#ccc 25%,transparent 25%),linear-gradient(-45deg,#ccc 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#ccc 75%),linear-gradient(-45deg,transparent 75%,#ccc 75%);
+    background-size: 20px 20px; background-position: 0 0,0 10px,10px -10px,-10px 0; }
+  canvas#view { max-width: 100%; max-height: 75vh; cursor: crosshair; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .empty { color: var(--muted); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; flex: 1; }
+  .seg button.on { background: var(--accent); color: var(--accent-text); }
+  .info { font-size: 12px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shirt Art Prep</h1>
+  <p>Open any image or PDF, knock out colors (like black for a black shirt), download a transparent PNG.</p>
+</header>
+<main>
+  <div>
+    <div class="panel">
+      <h2>1. Open artwork</h2>
+      <div class="drop" id="drop">Drop a file here or tap to choose<br><small>JPG, PNG, WebP, GIF, BMP, SVG, PDF</small></div>
+      <input type="file" id="file" accept="image/*,.pdf,application/pdf,.svg" hidden>
+      <div class="info" id="fileInfo"></div>
+    </div>
+
+    <div class="panel">
+      <h2>2. Remove colors</h2>
+      <div class="row">
+        <button id="addBlack">Remove black</button>
+        <button id="addWhite">Remove white</button>
+        <input type="color" id="picker" value="#ff0000" title="Pick any color">
+        <button id="addPicked">Add</button>
+      </div>
+      <div class="hint">Or click on the image to remove that exact color.</div>
+      <div class="chips" id="chips"></div>
+
+      <div style="margin-top:12px">
+        <label>Where</label>
+        <div class="seg" id="mode">
+          <button data-mode="all" class="on">Everywhere</button>
+          <button data-mode="bg">Background only</button>
+        </div>
+        <div class="hint" id="modeHint">Removes the color anywhere it appears, including inside the design.</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Tolerance: <span id="tolVal">20</span></label>
+        <input type="range" id="tol" min="0" max="100" value="20">
+        <div class="hint">Higher catches near-matches (dark grays, JPEG noise).</div>
+      </div>
+      <div style="margin-top:8px">
+        <label>Edge softness: <span id="softVal">10</span></label>
+        <input type="range" id="soft" min="0" max="50" value="10">
+        <div class="hint">Fades the edges so there are no jagged halos.</div>
+      </div>
+      <div style="margin-top:8px" class="row">
+        <label><input type="checkbox" id="trim" checked> Trim empty space around design</label>
+      </div>
+      <div style="margin-top:8px" class="row">
+        <button id="clear">Reset all</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>3. Preview & download</h2>
+      <label>Preview on shirt color</label>
+      <div class="swatches" id="shirts"></div>
+      <div style="margin-top:12px">
+        <button class="primary" id="download" disabled>Download PNG</button>
+      </div>
+      <div class="info" id="outInfo"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="stage checker" id="stage">
+      <div class="empty" id="empty">Open an image to start.</div>
+      <canvas id="view" hidden></canvas>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const view = $('view'), vctx = view.getContext('2d', { willReadFrequently: true });
+  let src = null;            // ImageData of the original artwork
+  let out = null;            // processed canvas
+  let baseName = 'artwork';
+  let mode = 'all';
+  const removeColors = [];   // [{r,g,b}]
+  const SHIRTS = [
+    ['checker', 'Transparent'], ['#000000', 'Black'], ['#ffffff', 'White'], ['#6b7280', 'Heather gray'],
+    ['#1e3a5f', 'Navy'], ['#b91c1c', 'Red'], ['#166534', 'Forest'], ['#f5e6c8', 'Natural'],
+  ];
+  let shirt = 'checker';
+
+  // ---------- loading ----------
+  const drop = $('drop'), fileIn = $('file');
+  drop.onclick = () => fileIn.click();
+  fileIn.onchange = () => fileIn.files[0] && load(fileIn.files[0]);
+  ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', ev => ev.dataTransfer.files[0] && load(ev.dataTransfer.files[0]));
+  window.addEventListener('paste', ev => {
+    const f = [...(ev.clipboardData?.files || [])][0];
+    if (f) load(f);
+  });
+
+  async function load(file) {
+    baseName = file.name.replace(/\.[^.]+$/, '') || 'artwork';
+    $('fileInfo').textContent = 'Loading ' + file.name + '…';
+    try {
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      const canvas = isPdf ? await renderPdf(file) : await renderImage(file);
+      src = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+      $('fileInfo').textContent = `${file.name} — ${canvas.width} × ${canvas.height}px`;
+      $('empty').hidden = true; view.hidden = false; $('download').disabled = false;
+      process();
+    } catch (e) {
+      console.error(e);
+      $('fileInfo').textContent = "Couldn't open that file. If it's HEIC or AI/EPS, export it as PDF, PNG or JPG first.";
+    }
+  }
+
+  function renderImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth, h = img.naturalHeight;
+        if (/svg/.test(file.type) || /\.svg$/i.test(file.name)) {   // vectors: render big for print
+          const s = 4500 / Math.max(w || 1, h || 1); w = Math.round((w || 1000) * s); h = Math.round((h || 1000) * s);
+        }
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url); resolve(c);
+      };
+      img.onerror = reject; img.src = url;
+    });
+  }
+
+  async function renderPdf(file) {
+    const lib = window.pdfjsLib;
+    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const page = await pdf.getPage(1);
+    const v1 = page.getViewport({ scale: 1 });
+    const scale = 4500 / Math.max(v1.width, v1.height);       // ~15in at 300dpi on the long side
+    const vp = page.getViewport({ scale });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp, background: 'rgba(0,0,0,0)' }).promise;
+    return c;
+  }
+
+  // ---------- color list ----------
+  const hex = ({ r, g, b }) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  function addColor(c) {
+    if (removeColors.some(x => x.r === c.r && x.g === c.g && x.b === c.b)) return;
+    removeColors.push(c); renderChips(); process();
+  }
+  function renderChips() {
+    const el = $('chips'); el.innerHTML = '';
+    removeColors.forEach((c, i) => {
+      const d = document.createElement('div'); d.className = 'chip';
+      d.innerHTML = `<span class="sw" style="background:${hex(c)}"></span><code>${hex(c)}</code><button title="Keep this color">✕</button>`;
+      d.querySelector('button').onclick = () => { removeColors.splice(i, 1); renderChips(); process(); };
+      el.appendChild(d);
+    });
+  }
+  $('addBlack').onclick = () => addColor({ r: 0, g: 0, b: 0 });
+  $('addWhite').onclick = () => addColor({ r: 255, g: 255, b: 255 });
+  $('addPicked').onclick = () => {
+    const v = $('picker').value;
+    addColor({ r: parseInt(v.slice(1, 3), 16), g: parseInt(v.slice(3, 5), 16), b: parseInt(v.slice(5, 7), 16) });
+  };
+  view.addEventListener('click', ev => {
+    if (!src) return;
+    const r = view.getBoundingClientRect();
+    const x = Math.floor((ev.clientX - r.left) / r.width * view.width);
+    const y = Math.floor((ev.clientY - r.top) / r.height * view.height);
+    // sample from the original (mapped through trim offset)
+    const ox = x + (out?.ox || 0), oy = y + (out?.oy || 0);
+    const i = (oy * src.width + ox) * 4;
+    if (src.data[i + 3] < 10) return;
+    addColor({ r: src.data[i], g: src.data[i + 1], b: src.data[i + 2] });
+  });
+  $('clear').onclick = () => { removeColors.length = 0; renderChips(); process(); };
+
+  document.querySelectorAll('#mode button').forEach(b => b.onclick = () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('#mode button').forEach(x => x.classList.toggle('on', x === b));
+    $('modeHint').textContent = mode === 'all'
+      ? 'Removes the color anywhere it appears, including inside the design.'
+      : 'Only removes the color where it touches the edge of the image (keeps it inside the design).';
+    process();
+  });
+  let t;
+  const schedule = () => { clearTimeout(t); t = setTimeout(process, 60); };
+  $('tol').oninput = () => { $('tolVal').textContent = $('tol').value; schedule(); };
+  $('soft').oninput = () => { $('softVal').textContent = $('soft').value; schedule(); };
+  $('trim').onchange = process;
+
+  // ---------- processing ----------
+  function process() {
+    if (!src) return;
+    const { width: w, height: h, data: s } = src;
+    const d = new Uint8ClampedArray(s);
+    const MAXD = 441.673;
+    const tol = $('tol').value / 100 * MAXD * 0.6;   // 100 → fairly aggressive
+    const soft = $('soft').value / 100 * MAXD * 0.6;
+    const cols = removeColors;
+
+    if (cols.length) {
+      // keep factor per pixel: 0 = fully removed, 1 = untouched
+      const keep = new Float32Array(w * h);
+      for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+        let best = Infinity;
+        for (const c of cols) {
+          const dr = s[i] - c.r, dg = s[i + 1] - c.g, db = s[i + 2] - c.b;
+          const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+          if (dist < best) best = dist;
+        }
+        keep[p] = best <= tol ? 0 : (soft > 0 && best < tol + soft ? (best - tol) / soft : 1);
+      }
+
+      let allowed = null;
+      if (mode === 'bg') {
+        // flood fill from edges through pixels that are (partly) removable
+        allowed = new Uint8Array(w * h);
+        const stack = [];
+        const push = p => { if (!allowed[p] && keep[p] < 1) { allowed[p] = 1; stack.push(p); } };
+        for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+        for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+        while (stack.length) {
+          const p = stack.pop(), x = p % w;
+          if (x > 0) push(p - 1);
+          if (x < w - 1) push(p + 1);
+          if (p >= w) push(p - w);
+          if (p < w * (h - 1)) push(p + w);
+        }
+      }
+
+      for (let p = 0; p < w * h; p++) {
+        const k = keep[p];
+        if (k >= 1 || (allowed && !allowed[p])) continue;
+        d[p * 4 + 3] = Math.round(d[p * 4 + 3] * k);
+      }
+    }
+
+    // trim
+    let x0 = 0, y0 = 0, x1 = w - 1, y1 = h - 1;
+    if ($('trim').checked) {
+      x0 = w; y0 = h; x1 = -1; y1 = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      if (x1 < 0) { x0 = 0; y0 = 0; x1 = w - 1; y1 = h - 1; }
+    }
+    const full = document.createElement('canvas'); full.width = w; full.height = h;
+    full.getContext('2d').putImageData(new ImageData(d, w, h), 0, 0);
+    const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    c.getContext('2d').drawImage(full, x0, y0, cw, ch, 0, 0, cw, ch);
+    c.ox = x0; c.oy = y0;
+    out = c;
+
+    view.width = cw; view.height = ch;
+    vctx.clearRect(0, 0, cw, ch); vctx.drawImage(c, 0, 0);
+    $('outInfo').textContent = `Output: ${cw} × ${ch}px` + (cw >= 3000 || ch >= 3000 ? '' : ' — note: under 3000px may print soft at full size.');
+  }
+
+  // ---------- shirt preview ----------
+  const sh = $('shirts');
+  SHIRTS.forEach(([v, name]) => {
+    const b = document.createElement('button'); b.title = name;
+    b.style.background = v === 'checker' ? 'repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 50%/12px 12px' : v;
+    b.onclick = () => {
+      shirt = v; [...sh.children].forEach(x => x.classList.toggle('on', x === b));
+      const st = $('stage'); st.classList.toggle('checker', v === 'checker'); st.style.backgroundColor = v === 'checker' ? '' : v;
+    };
+    if (v === shirt) b.classList.add('on');
+    sh.appendChild(b);
+  });
+
+  // ---------- download ----------
+  $('download').onclick = () => {
+    if (!out) return;
+    out.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = baseName + (removeColors.length ? '-knockout' : '') + '.png';
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, 'image/png');
+  };
+})();
+</script>
+</body>
+</html>
