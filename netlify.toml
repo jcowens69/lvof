@@ -6,3 +6,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# Make sure Netlify's Next.js runtime is always applied (serves pages, images and API routes).
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
